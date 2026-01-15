@@ -1,0 +1,47 @@
+# Binaries for programs and plugins (except Releases folder)
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Dependency directories
+vendor/
+
+# Go workspace file
+go.work
+
+# User-specific files (exclude from git)
+config.json
+
+# Reports and findings (exclude personal reports)
+Report/
+Findings/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Local compiled binaries (exclude from git, but keep Releases folder)
+cyber-osint-recon
+cyber-osint-recon.exe
+cyber-recon
+cyber-recon.exe
+osint-tool
+osint-tool.exe
+
+# Include Releases folder (keep release binaries)
+!Releases/
+!Releases/*.exe
