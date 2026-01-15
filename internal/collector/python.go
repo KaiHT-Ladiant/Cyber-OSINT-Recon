@@ -104,8 +104,10 @@ func CollectEmailsTheHarvester(domain, company string) ([]string, error) {
 	emails := make([]string, 0)
 	emailSet := make(map[string]bool)
 	for _, emailData := range result.Emails {
-		// Only include verified emails or emails from actual sources (not common_pattern)
-		if emailData.Verified || emailData.Source != "common_pattern" {
+		// Only include verified emails or emails from actual sources
+		// Exclude speculative patterns: common_pattern, company_pattern
+		source := emailData.Source
+		if emailData.Verified || (source != "common_pattern" && source != "company_pattern") {
 			email := strings.ToLower(strings.TrimSpace(emailData.Email))
 			if email != "" && !emailSet[email] {
 				emails = append(emails, email)

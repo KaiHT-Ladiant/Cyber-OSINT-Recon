@@ -31,10 +31,7 @@ func GenerateExcelReport(report *models.Report, filename string) error {
 		}
 	}()
 
-	// Remove default Sheet1 (ignore error if it doesn't exist)
-	_ = f.DeleteSheet("Sheet1")
-
-	// Create sheets
+	// Create sheets first
 	sheets := []struct {
 		name string
 		fn   func(*excelize.File, *models.Report) error
@@ -55,13 +52,34 @@ func GenerateExcelReport(report *models.Report, filename string) error {
 		{"모니터링", writeMonitoringSheet},
 	}
 
-	for _, sheet := range sheets {
-		_, err := f.NewSheet(sheet.name)
+	// Create first sheet and immediately delete Sheet1
+	if len(sheets) > 0 {
+		firstSheet := sheets[0]
+		_, err := f.NewSheet(firstSheet.name)
 		if err != nil {
-			return fmt.Errorf("failed to create sheet %s: %w", sheet.name, err)
+			return fmt.Errorf("failed to create sheet %s: %w", firstSheet.name, err)
 		}
-		if err := sheet.fn(f, report); err != nil {
-			return fmt.Errorf("failed to write sheet %s: %w", sheet.name, err)
+		// Switch to the new sheet before deleting Sheet1
+		sheetIndex, err := f.GetSheetIndex(firstSheet.name)
+		if err == nil && sheetIndex >= 0 {
+			f.SetActiveSheet(sheetIndex)
+		}
+		// Now delete Sheet1
+		_ = f.DeleteSheet("Sheet1")
+		// Write data to first sheet
+		if err := firstSheet.fn(f, report); err != nil {
+			return fmt.Errorf("failed to write sheet %s: %w", firstSheet.name, err)
+		}
+		// Create remaining sheets
+		for i := 1; i < len(sheets); i++ {
+			sheet := sheets[i]
+			_, err := f.NewSheet(sheet.name)
+			if err != nil {
+				return fmt.Errorf("failed to create sheet %s: %w", sheet.name, err)
+			}
+			if err := sheet.fn(f, report); err != nil {
+				return fmt.Errorf("failed to write sheet %s: %w", sheet.name, err)
+			}
 		}
 	}
 

@@ -3,6 +3,7 @@ package collector
 import (
 	"cyber-osint-recon/internal/models"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -52,6 +53,57 @@ func CollectDomainInfo(domain string) (*models.DomainInfo, error) {
 	return info, nil
 }
 
+// ExtractEmailsFromWhois WHOIS 데이터에서 이메일 주소 추출
+func ExtractEmailsFromWhois(domain string) []string {
+	result, err := whois.Whois(domain)
+	if err != nil {
+		return nil
+	}
+
+	emailSet := make(map[string]bool)
+	var emails []string
+
+	// WHOIS 결과 파싱하여 이메일 추출
+	whoisData := parseWhois(result)
+	
+	// emails 필드에서 이메일 추출
+	if whoisData["emails"] != "" {
+		emailList := strings.Split(whoisData["emails"], ",")
+		for _, email := range emailList {
+			email = strings.ToLower(strings.TrimSpace(email))
+			if email != "" && !emailSet[email] && strings.Contains(email, "@") {
+				// 도메인과 일치하는 이메일만 포함
+				if strings.HasSuffix(email, "@"+domain) || strings.HasSuffix(email, "."+domain) {
+					emails = append(emails, email)
+					emailSet[email] = true
+				}
+			}
+		}
+	}
+
+	// AdminContact, TechContact에서도 이메일 추출
+	contacts := []string{whoisData["admin"], whoisData["tech"], whoisData["registrant"]}
+	emailRegex := regexp.MustCompile(`[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}`)
+	
+	for _, contact := range contacts {
+		if contact != "" {
+			foundEmails := emailRegex.FindAllString(contact, -1)
+			for _, email := range foundEmails {
+				email = strings.ToLower(strings.TrimSpace(email))
+				if email != "" && !emailSet[email] {
+					// 도메인과 일치하는 이메일만 포함
+					if strings.HasSuffix(email, "@"+domain) || strings.HasSuffix(email, "."+domain) {
+						emails = append(emails, email)
+						emailSet[email] = true
+					}
+				}
+			}
+		}
+	}
+
+	return emails
+}
+
 // parseWhois WHOIS 결과 파싱
 func parseWhois(data string) map[string]string {
 	result := make(map[string]string)
@@ -91,6 +143,33 @@ func parseWhois(data string) map[string]string {
 		}
 		if strings.Contains(line, "Tech Contact:") || strings.Contains(line, "tech-c:") {
 			result["tech"] = extractValue(line, "Tech Contact:", "tech-c:")
+		}
+		// Extract email addresses from WHOIS data
+		if strings.Contains(strings.ToLower(line), "email:") || 
+		   strings.Contains(strings.ToLower(line), "e-mail:") ||
+		   strings.Contains(strings.ToLower(line), "email address:") ||
+		   strings.Contains(strings.ToLower(line), "e-mail address:") {
+			email := extractValue(line, "Email:", "email:", "E-mail:", "e-mail:", "Email Address:", "email address:", "E-mail Address:", "e-mail address:")
+			if email != "" && strings.Contains(email, "@") {
+				// Check if emails field exists, if not create it
+				if result["emails"] == "" {
+					result["emails"] = email
+				} else {
+					result["emails"] += "," + email
+				}
+			}
+		}
+		// Also extract emails from registrant, admin, tech fields if they contain @
+		if strings.Contains(line, "@") {
+			emailRegex := regexp.MustCompile(`[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}`)
+			emails := emailRegex.FindAllString(line, -1)
+			for _, email := range emails {
+				if result["emails"] == "" {
+					result["emails"] = email
+				} else if !strings.Contains(result["emails"], email) {
+					result["emails"] += "," + email
+				}
+			}
 		}
 	}
 

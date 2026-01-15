@@ -37,21 +37,8 @@ def search_emails(domain: str, company: str) -> Dict:
     # These are speculative and not verified. Only include emails that are
     # actually found through web searches or other verification methods.
     # If you need common patterns, use verified sources like Hunter.io API.
-    
-    # Try to extract from company name
-    if company:
-        company_lower = company.lower().replace(" ", "")
-        potential_emails = [
-            f"{company_lower}@{domain}",
-            f"contact@{domain}",
-        ]
-        for email in potential_emails:
-            if email not in [e["email"] for e in results["emails"]]:
-                results["emails"].append({
-                    "email": email,
-                    "source": "company_pattern",
-                    "verified": False
-                })
+    # Company pattern emails (e.g., company@domain, contact@domain) are also
+    # removed as they are unverified speculative emails.
     
     return results
 
