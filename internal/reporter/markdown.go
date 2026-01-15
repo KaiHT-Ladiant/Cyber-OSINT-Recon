@@ -616,10 +616,6 @@ func GenerateMarkdownReport(report *models.Report, filename string) error {
 		md.WriteString("### Data Spillage / Risk Items\n\n")
 		md.WriteString("No data spillage or risk items found at this time.\n\n")
 	}
-	md.WriteString("**Example Risk Items:**\n")
-	md.WriteString("- `config.php`에 DB 정보 노출 → 리스크 항목\n")
-	md.WriteString("- API 키가 공개 리포지토리에 하드코딩됨 → 리스크 항목\n")
-	md.WriteString("- 내부 URL이 페이스트 사이트에 노출됨 → 리스크 항목\n\n")
 
 	// Security Threats
 	if len(report.SecurityThreats) > 0 {

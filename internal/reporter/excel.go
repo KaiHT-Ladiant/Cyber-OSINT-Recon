@@ -52,34 +52,41 @@ func GenerateExcelReport(report *models.Report, filename string) error {
 		{"모니터링", writeMonitoringSheet},
 	}
 
-	// Create first sheet and immediately delete Sheet1
-	if len(sheets) > 0 {
-		firstSheet := sheets[0]
-		_, err := f.NewSheet(firstSheet.name)
+	// Create all sheets first
+	for _, sheet := range sheets {
+		_, err := f.NewSheet(sheet.name)
 		if err != nil {
-			return fmt.Errorf("failed to create sheet %s: %w", firstSheet.name, err)
+			return fmt.Errorf("failed to create sheet %s: %w", sheet.name, err)
 		}
-		// Switch to the new sheet before deleting Sheet1
-		sheetIndex, err := f.GetSheetIndex(firstSheet.name)
-		if err == nil && sheetIndex >= 0 {
-			f.SetActiveSheet(sheetIndex)
+		if err := sheet.fn(f, report); err != nil {
+			return fmt.Errorf("failed to write sheet %s: %w", sheet.name, err)
 		}
-		// Now delete Sheet1
-		_ = f.DeleteSheet("Sheet1")
-		// Write data to first sheet
-		if err := firstSheet.fn(f, report); err != nil {
-			return fmt.Errorf("failed to write sheet %s: %w", firstSheet.name, err)
+	}
+
+	// After all sheets are created, delete Sheet1 if it still exists
+	// First, ensure we're not on Sheet1 before deleting it
+	sheetList := f.GetSheetList()
+	var activeSheetIndex int = -1
+	for i, name := range sheetList {
+		if name != "Sheet1" {
+			activeSheetIndex = i
+			break
 		}
-		// Create remaining sheets
-		for i := 1; i < len(sheets); i++ {
-			sheet := sheets[i]
-			_, err := f.NewSheet(sheet.name)
-			if err != nil {
-				return fmt.Errorf("failed to create sheet %s: %w", sheet.name, err)
-			}
-			if err := sheet.fn(f, report); err != nil {
-				return fmt.Errorf("failed to write sheet %s: %w", sheet.name, err)
-			}
+	}
+	if activeSheetIndex >= 0 {
+		// Switch to a non-Sheet1 sheet
+		idx, err := f.GetSheetIndex(sheetList[activeSheetIndex])
+		if err == nil && idx >= 0 {
+			f.SetActiveSheet(idx)
+		}
+	}
+
+	// Now delete Sheet1 if it exists
+	sheetList = f.GetSheetList()
+	for _, sheetName := range sheetList {
+		if sheetName == "Sheet1" {
+			_ = f.DeleteSheet("Sheet1")
+			break
 		}
 	}
 
