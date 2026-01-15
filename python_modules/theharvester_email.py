@@ -33,24 +33,10 @@ def search_emails(domain: str, company: str) -> Dict:
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     }
     
-    # Common email patterns to try
-    common_patterns = [
-        f"contact@{domain}",
-        f"info@{domain}",
-        f"admin@{domain}",
-        f"support@{domain}",
-        f"sales@{domain}",
-        f"hr@{domain}",
-        f"security@{domain}",
-    ]
-    
-    for email in common_patterns:
-        if email not in results["emails"]:
-            results["emails"].append({
-                "email": email,
-                "source": "common_pattern",
-                "verified": False
-            })
+    # Note: Common email patterns are not included by default
+    # These are speculative and not verified. Only include emails that are
+    # actually found through web searches or other verification methods.
+    # If you need common patterns, use verified sources like Hunter.io API.
     
     # Try to extract from company name
     if company:
