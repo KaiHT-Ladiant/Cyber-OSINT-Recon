@@ -1,0 +1,7 @@
+# CyRecon domain list example
+# One domain per line. Lines starting with # are ignored.
+# Optional notes after comma/space are ignored (first token = domain).
+
+example.com
+example.org
+# subsidiary.example.com

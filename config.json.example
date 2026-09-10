@@ -1,0 +1,5 @@
+{
+  "shodan_api_key": "your-shodan-api-key-here",
+  "censys_token": "your-censys-api-token-here-or-api-id:secret",
+  "virustotal_api_key": "your-virustotal-api-key-here"
+}
