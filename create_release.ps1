@@ -18,7 +18,8 @@ $ErrorActionPreference = "Stop"
 $binaryPath = "Releases\cyber-osint-recon-windows-amd64.exe"
 $binaryName = "cyber-osint-recon-windows-amd64.exe"
 $iconPath = "assets\cyrecon.ico"
-$sysoPath = "cmd\cyber-osint-recon\rsrc_windows_amd64.syso"
+$versionInfo = "versioninfo.json"
+$sysoPath = "cmd\cyber-osint-recon\resource_windows_amd64.syso"
 
 if (-not $SkipBuild) {
     if (-not (Test-Path $iconPath)) {
@@ -26,8 +27,38 @@ if (-not $SkipBuild) {
         exit 1
     }
 
-    Write-Host "[+] Embedding CyRecon icon into Windows resources..." -ForegroundColor Yellow
-    go run github.com/akavel/rsrc@v0.10.2 -ico $iconPath -arch amd64 -o $sysoPath
+    Write-Host "[+] Generating Windows icon/version resources (goversioninfo)..." -ForegroundColor Yellow
+    # versioninfo.json at repo root for release builds (IconPath: assets/cyrecon.ico)
+    @"
+{
+  "FixedFileInfo": {
+    "FileVersion": {"Major": 1, "Minor": 1, "Patch": 0, "Build": 0},
+    "ProductVersion": {"Major": 1, "Minor": 1, "Patch": 0, "Build": 0},
+    "FileFlagsMask": "3f",
+    "FileFlags": "00",
+    "FileOS": "040004",
+    "FileType": "01",
+    "FileSubType": "00"
+  },
+  "StringFileInfo": {
+    "Comments": "CyRecon - Cyber OSINT Recon",
+    "CompanyName": "RedSec",
+    "FileDescription": "CyRecon OSINT Tool",
+    "FileVersion": "1.1.0.0",
+    "InternalName": "cyrecon",
+    "LegalCopyright": "MIT License - Kai_HT / RedSec",
+    "OriginalFilename": "cyber-osint-recon-windows-amd64.exe",
+    "ProductName": "CyRecon",
+    "ProductVersion": "1.1.0.0"
+  },
+  "VarFileInfo": {
+    "Translation": {"LangID": "0409", "CharsetID": "04B0"}
+  },
+  "IconPath": "assets/cyrecon.ico"
+}
+"@ | Set-Content -Path $versionInfo -Encoding UTF8
+
+    go run github.com/josephspurrier/goversioninfo/cmd/goversioninfo@latest -64 -o $sysoPath $versionInfo
     if ($LASTEXITCODE -ne 0) {
         Write-Host "[!] Failed to generate .syso resource file" -ForegroundColor Red
         exit 1
@@ -37,7 +68,7 @@ if (-not $SkipBuild) {
     Write-Host "[+] Building Windows AMD64 binary with icon..." -ForegroundColor Yellow
     $env:GOOS = "windows"
     $env:GOARCH = "amd64"
-    go build -o $binaryPath ./cmd/cyber-osint-recon
+    go build -ldflags="-s -w" -o $binaryPath ./cmd/cyber-osint-recon
     Remove-Item Env:GOOS -ErrorAction SilentlyContinue
     Remove-Item Env:GOARCH -ErrorAction SilentlyContinue
     if ($LASTEXITCODE -ne 0) {

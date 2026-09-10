@@ -67,15 +67,15 @@ go build -o cyber-osint-recon ./cmd/cyber-osint-recon
 
 ### Windows build (with application icon)
 
-The CyRecon icon is embedded into Windows `.exe` builds via `cmd/cyber-osint-recon/rsrc_windows_amd64.syso` (from `assets/cyrecon.ico`).
+The CyRecon icon is embedded into Windows `.exe` builds via `cmd/cyber-osint-recon/resource_windows_amd64.syso` (generated from `assets/cyrecon.ico` with goversioninfo).
 
 ```powershell
-# Regenerate icon resource (optional)
-go run github.com/akavel/rsrc@v0.10.2 -ico assets/cyrecon.ico -arch amd64 -o cmd/cyber-osint-recon/rsrc_windows_amd64.syso
+# Regenerate icon/version resource (from repo root)
+go run github.com/josephspurrier/goversioninfo/cmd/goversioninfo@latest -64 -o cmd/cyber-osint-recon/resource_windows_amd64.syso cmd/cyber-osint-recon/versioninfo.json
 
 # Cross-compile / native Windows build
 $env:GOOS="windows"; $env:GOARCH="amd64"
-go build -o Releases/cyber-osint-recon-windows-amd64.exe ./cmd/cyber-osint-recon
+go build -ldflags="-s -w" -o Releases/cyber-osint-recon-windows-amd64.exe ./cmd/cyber-osint-recon
 ```
 
 Or use `.\create_release.ps1 -Token <GITHUB_TOKEN>` which rebuilds with the icon before uploading.
@@ -182,7 +182,8 @@ On an interactive terminal, omitting `--mode` shows a `[Mode]` selection prompt 
 │       ├── mode.go          # [Mode] single/multi selection + list loader
 │       ├── scan.go          # Scan orchestration
 │       ├── progress.go      # Progress tracker
-│       └── rsrc_windows_amd64.syso  # Embedded Windows exe icon
+│       ├── versioninfo.json # Windows version/icon metadata
+│       └── resource_windows_amd64.syso  # Embedded Windows exe icon/version
 ├── internal/
 │   ├── collector/           # Information collection modules
 │   ├── reporter/            # Report generation modules
